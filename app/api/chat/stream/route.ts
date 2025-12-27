@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
-import { ZhipuAiClient } from 'zai-sdk';
+import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4';
 
-// 初始化 GLM-4.7 客户端
-const client = new ZhipuAiClient({
+// 初始化智谱AI客户端
+const client = new ZhipuAI({
   apiKey: process.env.ZHIPU_API_KEY || '',
 });
 
@@ -37,15 +37,17 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // 调用 GLM-4.7 流式 API
-          const response = await client.chat.completions.create({
-            model: 'glm-4.7',
+          // 调用智谱AI流式 API
+          const requestParams: any = {
+            model: 'glm-4',
             messages: messages,
-            thinking: thinking || { type: 'enabled' },
             stream: true,
-            max_tokens: 65536,
-            temperature: 1.0,
-          } as any);
+            max_tokens: 2048,
+            temperature: 0.7,
+          };
+          
+          // 使用 createCompletions 方法（流式）
+          const response = await client.createCompletions(requestParams);
 
           // 处理流式数据
           for await (const chunk of response) {

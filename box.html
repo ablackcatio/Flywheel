@@ -300,6 +300,10 @@
     </script>
     <script type="module" src="app.js"></script>
     <script>
+        // 聊天消息历史
+        let chatHistory = [];
+        let isLoading = false;
+        
         // 初始化聊天对话框
         document.addEventListener('DOMContentLoaded', function() {
             const chatInput = document.getElementById('chat-input');
@@ -335,23 +339,162 @@
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         const message = chatInput.value.trim();
-                        if (message) {
-                            addChatMessage(message, 'user');
+                        if (message && !isLoading) {
+                            sendMessage(message);
                             chatInput.value = '';
                             // 重置高度
                             setTimeout(() => {
                                 chatInput.style.height = 'auto';
                                 chatInput.style.height = '24px';
                             }, 0);
-                            // 可以在这里添加自动回复逻辑
                         }
                     }
                 });
             }
         });
         
+        // 发送消息到智谱AI
+        async function sendMessage(userMessage) {
+            if (isLoading) return;
+            
+            isLoading = true;
+            
+            // 添加用户消息到界面
+            addChatMessage(userMessage, 'user');
+            
+            // 添加用户消息到历史
+            chatHistory.push({ role: 'user', content: userMessage });
+            
+            // 显示加载状态
+            const loadingMessageId = showLoadingMessage();
+            
+            try {
+                // 调用智谱AI API
+                const apiUrl = '/api/chat';
+                console.log('调用API:', apiUrl);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: chatHistory,
+                        thinking: { type: 'enabled' },
+                    }),
+                });
+                
+                console.log('API响应状态:', response.status, response.statusText);
+                
+                // 先读取响应文本（Response只能读取一次）
+                const responseText = await response.text();
+                console.log('响应文本长度:', responseText.length);
+                console.log('响应状态:', response.status);
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    let errorText = responseText || response.statusText || '未知错误';
+                    // 尝试解析为JSON
+                    try {
+                        const errorJson = JSON.parse(responseText);
+                        errorText = errorJson.error || errorJson.message || errorText;
+                    } catch (e) {
+                        // 保持原始文本
+                    }
+                    throw new Error(`HTTP错误 ${response.status}: ${errorText}`);
+                }
+                
+                // 检查响应是否为空
+                if (!responseText || responseText.trim() === '') {
+                    throw new Error('响应为空，请确保Next.js服务器正在运行并且API端点可用');
+                }
+                
+                // 检查响应内容类型
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('非JSON响应:', responseText.substring(0, 200));
+                    throw new Error(`无效的响应格式，期望JSON但收到: ${contentType || '未知类型'}`);
+                }
+                
+                // 安全地解析JSON
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log('解析后的数据:', data);
+                } catch (parseError) {
+                    console.error('JSON解析错误:', parseError);
+                    console.error('原始响应:', responseText.substring(0, 500));
+                    throw new Error('响应格式错误，无法解析JSON。请检查API端点是否正确配置');
+                }
+                
+                // 移除加载消息
+                removeLoadingMessage(loadingMessageId);
+                
+                if (data.success && data.data?.choices?.[0]?.message) {
+                    const assistantMessage = data.data.choices[0].message.content || '';
+                    const reasoning = data.data.choices[0].message.reasoning_content;
+                    
+                    // 显示思考过程（如果有）
+                    if (reasoning) {
+                        addChatMessage(reasoning, 'assistant', true);
+                    }
+                    
+                    // 显示助手回复
+                    addChatMessage(assistantMessage, 'assistant');
+                    
+                    // 添加助手消息到历史
+                    chatHistory.push({ role: 'assistant', content: assistantMessage });
+                } else {
+                    throw new Error(data.error || data.message || 'API 调用失败，响应格式不正确');
+                }
+            } catch (error) {
+                console.error('发送消息错误:', error);
+                // 移除加载消息
+                removeLoadingMessage(loadingMessageId);
+                // 显示错误消息
+                let errorMsg = error.message || '发送消息失败';
+                
+                // 如果是网络错误，提供更友好的提示
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMsg = '无法连接到API服务器。请确保Next.js服务器正在运行（npm run dev），并且通过 http://localhost:3000 访问页面';
+                }
+                
+                addChatMessage(`错误: ${errorMsg}`, 'assistant', false, true);
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+        // 显示加载消息
+        function showLoadingMessage() {
+            const chatMessages = document.getElementById('chat-messages');
+            if (!chatMessages) return null;
+            
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chat-message';
+            loadingDiv.id = 'loading-message-' + Date.now();
+            loadingDiv.style.background = '#e8f4f8';
+            loadingDiv.style.fontStyle = 'italic';
+            loadingDiv.style.color = '#666';
+            loadingDiv.textContent = '正在思考...';
+            
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return loadingDiv.id;
+        }
+        
+        // 移除加载消息
+        function removeLoadingMessage(messageId) {
+            if (!messageId) return;
+            const loadingMessage = document.getElementById(messageId);
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+        
         // 添加聊天消息
-        function addChatMessage(text, sender) {
+        function addChatMessage(text, sender, isReasoning = false, isError = false) {
             const chatMessages = document.getElementById('chat-messages');
             if (!chatMessages) return;
             
@@ -362,6 +505,19 @@
             if (sender === 'user') {
                 messageDiv.style.background = '#fffacd';
                 messageDiv.style.textAlign = 'right';
+            } else if (isReasoning) {
+                // 思考过程样式
+                messageDiv.style.background = '#fff9c4';
+                messageDiv.style.fontStyle = 'italic';
+                messageDiv.style.color = '#666';
+                messageDiv.style.marginBottom = '6px';
+            } else if (isError) {
+                // 错误消息样式
+                messageDiv.style.background = '#ffebee';
+                messageDiv.style.color = '#c62828';
+            } else {
+                // 普通助手消息
+                messageDiv.style.background = '#e8f4f8';
             }
             
             chatMessages.appendChild(messageDiv);

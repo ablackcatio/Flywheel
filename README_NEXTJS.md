@@ -126,7 +126,7 @@ GLM-4.7 支持思考模式，可以在回复前显示 AI 的思考过程。在�
 - **Next.js 14** - React 框架
 - **TypeScript** - 类型安全
 - **Tailwind CSS** - 样式框架
-- **zai-sdk** - GLM-4.7 SDK
+- **zhipuai-sdk-nodejs-v4** - GLM-4.7 SDK
 - **React Hooks** - 状态管理
 
 ## 注意事项
