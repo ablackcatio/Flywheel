@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 98 Desktop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'MS Sans Serif', 'Microsoft Sans Serif', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(to bottom, 
+                #87ceeb 0%,      /* 天蓝色 - 顶部 */
+                #5ba3d1 25%,     /* 浅蓝色 */
+                #3d8bc0 50%,     /* 中蓝色 */
+                #2a6fa5 75%,     /* 深蓝色 */
+                #1e5fa3 100%     /* 深蓝色 - 底部 */
+            );
+            position: relative;
+        }
+
+        /* 桌面背景波浪纹理效果 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse 800px 400px at 30% 60%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse 600px 300px at 70% 40%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 900px 500px at 50% 80%, rgba(255, 255, 255, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 700px 350px at 20% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* 桌面图标容器 */
+        .desktop-icons {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: none; /* 暂时隐藏所有图标 */
+            flex-direction: column;
+            gap: 30px;
+            z-index: 1;
+        }
+
+        .icon-row {
+            display: flex;
+            gap: 60px;
+        }
+
+        /* 桌面图标 */
+        .desktop-icon {
+            width: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 2px;
+            user-select: none;
+            position: relative;
+        }
+
+        .desktop-icon:hover {
+            background: rgba(0, 0, 255, 0.2);
+        }
+
+        .desktop-icon:active {
+            background: rgba(0, 0, 255, 0.3);
+        }
+
+        .desktop-icon.selected {
+            background: rgba(0, 0, 255, 0.3);
+        }
+
+        .desktop-icon.selected .icon-label {
+            background: rgba(0, 0, 255, 0.3);
+            padding: 1px 2px;
+        }
+
+        .icon-image {
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 2px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.3));
+        }
+
+        .icon-label {
+            color: white;
+            font-size: 11px;
+            text-align: center;
+            text-shadow: 
+                1px 1px 0px rgba(0, 0, 0, 0.8),
+                -1px -1px 0px rgba(0, 0, 0, 0.8),
+                1px -1px 0px rgba(0, 0, 0, 0.8),
+                -1px 1px 0px rgba(0, 0, 0, 0.8);
+            max-width: 70px;
+            word-wrap: break-word;
+            line-height: 1.2;
+            padding: 0 2px;
+        }
+
+        /* 任务栏 */
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: #c0c0c0;
+            border-top: 2px outset #c0c0c0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4px;
+            z-index: 1000;
+        }
+
+        /* 开始按钮 */
+        .start-button {
+            height: 24px;
+            padding: 0 8px 0 6px;
+            background: #c0c0c0;
+            border: 2px outset #c0c0c0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            color: #000000;
+            user-select: none;
+            line-height: 24px;
+        }
+
+        .start-button:hover {
+            background: #d4d0c8;
+        }
+
+        .start-button:active {
+            border: 2px inset #c0c0c0;
+            background: #c0c0c0;
+        }
+
+        /* Windows Logo 图标 - 像素风格 */
+        .windows-logo {
+            width: 14px;
+            height: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0;
+            flex-shrink: 0;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .windows-logo-square {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .windows-logo-red { background: #ff0000; }
+        .windows-logo-green { background: #008000; }
+        .windows-logo-blue { background: #0000ff; }
+        .windows-logo-yellow { background: #ffff00; }
+
+        /* 任务栏右侧 */
+        .taskbar-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 28px;
+            padding: 0 6px;
+            background: #c0c0c0;
+            border: 1px inset #c0c0c0;
+        }
+
+        .taskbar-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .clock {
+            padding: 0 6px;
+            font-size: 11px;
+            font-weight: normal;
+            color: #000000;
+            border: none;
+            background: transparent;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            min-width: 50px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- 桌面图标 -->
+    <div class="desktop-icons">
+        <div class="icon-row">
+            <div class="desktop-icon" data-app="my-computer">
+                <div class="icon-image">💻</div>
+                <div class="icon-label">我的電腦</div>
+            </div>
+            <div class="desktop-icon" data-app="paint">
+                <div class="icon-image">🖌️</div>
+                <div class="icon-label">小畫家</div>
+            </div>
+            <div class="desktop-icon" data-app="recycle-bin">
+                <div class="icon-image">🗑️</div>
+                <div class="icon-label">垃圾桶</div>
+            </div>
+        </div>
+        <div class="icon-row">
+            <div class="desktop-icon" data-app="ipod">
+                <div class="icon-image">🎵</div>
+                <div class="icon-label">iPod</div>
+            </div>
+            <div class="desktop-icon" data-app="sound-board">
+                <div class="icon-image">💿</div>
+                <div class="icon-label">音效板</div>
+            </div>
+            <div class="desktop-icon" data-app="chat">
+                <div class="icon-image">💬</div>
+                <div class="icon-label">聊天</div>
+            </div>
+        </div>
+        <div class="icon-row">
+            <div class="desktop-icon" data-app="minesweeper">
+                <div class="icon-image">💣</div>
+                <div class="icon-label">踩地雷</div>
+            </div>
+            <div class="desktop-icon" data-app="applet-store">
+                <div class="icon-image">🪟</div>
+                <div class="icon-label">小程式商店</div>
+            </div>
+            <div class="desktop-icon" data-app="synthesizer">
+                <div class="icon-image">🎹</div>
+                <div class="icon-label">合成器</div>
+            </div>
+        </div>
+        <div class="icon-row">
+            <div class="desktop-icon" data-app="internet-explorer">
+                <div class="icon-image">🌐</div>
+                <div class="icon-label">Internet Explorer</div>
+            </div>
+            <div class="desktop-icon" data-app="terminal">
+                <div class="icon-image">💻</div>
+                <div class="icon-label">終端機</div>
+            </div>
+            <div class="desktop-icon" data-app="text-editor">
+                <div class="icon-image">📝</div>
+                <div class="icon-label">文字編輯</div>
+            </div>
+        </div>
+        <div class="icon-row">
+            <div class="desktop-icon" data-app="virtual-pc">
+                <div class="icon-image">🖥️</div>
+                <div class="icon-label">虛擬 PC</div>
+            </div>
+            <div class="desktop-icon" data-app="photo-booth">
+                <div class="icon-image">📷</div>
+                <div class="icon-label">照片亭</div>
+            </div>
+            <div class="desktop-icon" data-app="administrator">
+                <div class="icon-image">⚙️</div>
+                <div class="icon-label">管理員</div>
+            </div>
+        </div>
+        <div class="icon-row">
+            <div class="desktop-icon" data-app="video">
+                <div class="icon-image">🎬</div>
+                <div class="icon-label">影片</div>
+            </div>
+            <div class="desktop-icon" data-app="karaoke">
+                <div class="icon-image">🎤</div>
+                <div class="icon-label">卡拉OK</div>
+            </div>
+            <div class="desktop-icon" data-app="box">
+                <div class="icon-image">📦</div>
+                <div class="icon-label">3D 盒子</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务栏 -->
+    <div class="taskbar">
+        <button class="start-button" onclick="toggleStartMenu()">
+            <div class="windows-logo">
+                <div class="windows-logo-square windows-logo-red"></div>
+                <div class="windows-logo-square windows-logo-green"></div>
+                <div class="windows-logo-square windows-logo-blue"></div>
+                <div class="windows-logo-square windows-logo-yellow"></div>
+            </div>
+            开始
+        </button>
+        <div class="taskbar-right">
+            <div class="taskbar-icon">🔊</div>
+            <div class="clock" id="clock">16:17</div>
+        </div>
+    </div>
+
+    <script>
+        // 更新时间
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+        }
+
+        // 初始化时钟并每秒更新
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // 打开应用程序
+        function openApp(appName) {
+            if (appName === 'box') {
+                // 打开 3D 盒子页面
+                window.location.href = 'box.html';
+            } else {
+                // 其他应用的占位功能
+                alert(`正在打开 ${appName}...`);
+            }
+        }
+
+        // 开始菜单（简单实现）
+        function toggleStartMenu() {
+            alert('开始菜单');
+        }
+
+        // 双击图标打开应用
+        let clickTimers = {};
+        document.querySelectorAll('.desktop-icon').forEach(icon => {
+            const appName = icon.getAttribute('data-app');
+            
+            icon.addEventListener('click', function(e) {
+                const timerKey = appName;
+                
+                if (!clickTimers[timerKey]) {
+                    // 第一次点击，设置定时器
+                    clickTimers[timerKey] = setTimeout(() => {
+                        delete clickTimers[timerKey];
+                        // 单击选中效果
+                        document.querySelectorAll('.desktop-icon').forEach(i => {
+                            i.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                    }, 300);
+                } else {
+                    // 双击，清除定时器并打开应用
+                    clearTimeout(clickTimers[timerKey]);
+                    delete clickTimers[timerKey];
+                    // 取消选中
+                    document.querySelectorAll('.desktop-icon').forEach(i => {
+                        i.classList.remove('selected');
+                    });
+                    // 打开应用
+                    openApp(appName);
+                }
+            });
+        });
+
+        // 点击桌面取消选中
+        document.body.addEventListener('click', function(e) {
+            if (e.target === document.body || e.target.classList.contains('desktop-icons')) {
+                document.querySelectorAll('.desktop-icon').forEach(i => {
+                    i.classList.remove('selected');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+

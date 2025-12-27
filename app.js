@@ -13,17 +13,30 @@ let photos = [];
 let photoGroup = new THREE.Group();
 let isBoxOpened = false;
 let selectedPhoto = null;
+let selectedPhotoNumber = null; // 存储当前选中照片的序号
 let photosAnimating = false;
 
 // 粒子系统
 let particles = [];
 let particleGroup = new THREE.Group();
 
-// 照片数据（9张照片，使用占位图片）
-const photoCount = 9;
-const photoUrls = [];
-for (let i = 1; i <= photoCount; i++) {
-    photoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/FF6B6B/FFFFFF?text=B2-2-${i}`);
+// 照片数据（B2-2: 9张照片，C2-2: 6张照片）
+const b2_2PhotoCount = 6;
+const b2_2PhotoUrls = [];
+for (let i = 1; i <= b2_2PhotoCount; i++) {
+    b2_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/FF6B6B/FFFFFF?text=B2-2-${i}`);
+}
+
+const c2_2PhotoCount = 4;
+const c2_2PhotoUrls = [];
+for (let i = 1; i <= c2_2PhotoCount; i++) {
+    c2_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/4CAF50/FFFFFF?text=C2-2-${i}`);
+}
+
+const b1_2PhotoCount = 4;
+const b1_2PhotoUrls = [];
+for (let i = 1; i <= b1_2PhotoCount; i++) {
+    b1_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/4169E1/FFFFFF?text=B1-2-${i}`);
 }
 
 // 初始化
@@ -126,7 +139,7 @@ function init() {
 
 // 根据图片中的布局创建立方体
 function createCubes() {
-    const cubeSize = 1;
+    const cubeSize = 1.25; // 盒子放大1/4（1 * 1.25 = 1.25）
     const spacing = 2.5;
     const baseOffset = -spacing;
     const baseYOffset = -spacing;
@@ -201,7 +214,7 @@ function createCubes() {
         // 更新标签位置
         if (b2_2Cube.userData.labelSprite) {
             b2_2Cube.userData.labelSprite.position.copy(framePosition);
-            b2_2Cube.userData.labelSprite.position.y += 0.7;
+            b2_2Cube.userData.labelSprite.position.y += 0.875; // 标签位置随盒子大小调整（放大1/4：0.7*1.25=0.875）
         }
     }
     
@@ -251,14 +264,65 @@ function createLabel(cube, text) {
     const labelSize = cube.userData.size === 'small' ? 0.8 : 1.2;
     sprite.scale.set(labelSize, labelSize * 0.5, 1);
     sprite.position.copy(cube.position);
-    sprite.position.y += cube.userData.size === 'small' ? 0.4 : 0.7;
+    sprite.position.y += cube.userData.size === 'small' ? 0.5 : 0.875; // 标签位置随盒子大小调整（放大1/4：0.4*1.25=0.5, 0.7*1.25=0.875）
     
     scene.add(sprite);
     cube.userData.labelSprite = sprite;
 }
 
-// 存储B2-2盒子的位置，用于收回照片和粒子
+// 为照片创建序号标签
+function createPhotoNumberLabel(photoMesh, number) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 128;
+    canvas.height = 128;
+    
+    // 绘制圆形背景
+    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    context.beginPath();
+    context.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2 - 4, 0, Math.PI * 2);
+    context.fill();
+    
+    // 绘制白色边框
+    context.strokeStyle = 'white';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2 - 4, 0, Math.PI * 2);
+    context.stroke();
+    
+    // 绘制序号文字
+    context.fillStyle = 'white';
+    context.font = 'bold 64px Arial';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(number.toString(), canvas.width / 2, canvas.height / 2);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const spriteMaterial = new THREE.SpriteMaterial({ 
+        map: texture,
+        transparent: true,
+        alphaTest: 0.1
+    });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    
+    // 标签大小（相对于照片）
+    const labelSize = 0.6;
+    sprite.scale.set(labelSize, labelSize, 1);
+    sprite.position.copy(photoMesh.position);
+    // 标签放在照片的右上角（需要根据照片的baseSize计算偏移）
+    const photoSize = photoMesh.userData.baseSize || 2;
+    sprite.position.y += photoSize * 0.4;
+    sprite.position.x += photoSize * 0.4;
+    
+    scene.add(sprite);
+    photoMesh.userData.numberLabelSprite = sprite;
+}
+
+// 存储盒子的位置，用于收回照片和粒子
 let b2_2BoxPosition = new THREE.Vector3(0, -8, 0);
+let c2_2BoxPosition = null; // 用于存储C2-2盒子位置
+let b1_2BoxPosition = null; // 用于存储B1-2盒子位置
 
 // 打开盒子并飞出照片和粒子
 function openBox(cube) {
@@ -267,20 +331,46 @@ function openBox(cube) {
     photosAnimating = true;
     
     const boxPosition = cube.position.clone();
-    b2_2BoxPosition = boxPosition.clone(); // 保存盒子位置
+    const boxLabel = cube.userData.label;
+    
+    // 根据盒子类型选择照片数据
+    let photoUrls, photoCount, photoPrefix;
+    if (boxLabel === 'B2-2') {
+        photoUrls = b2_2PhotoUrls;
+        photoCount = b2_2PhotoCount;
+        photoPrefix = 'B2-2';
+        b2_2BoxPosition = boxPosition.clone(); // 保存B2-2盒子位置
+    } else if (boxLabel === 'C2-2') {
+        photoUrls = c2_2PhotoUrls;
+        photoCount = c2_2PhotoCount;
+        photoPrefix = 'C2-2';
+        c2_2BoxPosition = boxPosition.clone(); // 保存C2-2盒子位置
+    } else if (boxLabel === 'B1-2') {
+        photoUrls = b1_2PhotoUrls;
+        photoCount = b1_2PhotoCount;
+        photoPrefix = 'B1-2';
+        b1_2BoxPosition = boxPosition.clone(); // 保存B1-2盒子位置
+    } else {
+        // 默认使用B2-2的数据
+        photoUrls = b2_2PhotoUrls;
+        photoCount = b2_2PhotoCount;
+        photoPrefix = 'B2-2';
+    }
     
     // 盒子保持正着放，不旋转（位置保持在下方）
     cube.rotation.set(0, 0, 0);
     
     // 创建粒子（数量再增加一倍，从400到800）
-    // 粒子主要围绕在照片周围（场景中心区域）
-    const photoCenterPosition = new THREE.Vector3(0, 0, 0); // 照片围成的圆圈中心
-    createParticles(photoCenterPosition, 800);
+    // 粒子主要围绕在照片周围：C2-2的粒子围绕C2-2盒子位置，其他盒子围绕场景中心
+    const particleCenter = boxLabel === 'C2-2' ? boxPosition.clone() : new THREE.Vector3(0, 0, 0);
+    createParticles(particleCenter, 800, photoPrefix); // 传递photoPrefix给粒子
     
     // 创建照片并飞出（围成一圈，从盒子里直接飞出来）
+    // 确定照片围绕的中心位置：C2-2的照片围绕C2-2盒子位置，其他盒子围绕场景中心
+    const photoCenter = boxLabel === 'C2-2' ? boxPosition.clone() : new THREE.Vector3(0, 0, 0);
     photoUrls.forEach((url, index) => {
         setTimeout(() => {
-            createPhoto(url, boxPosition, index, photoCount);
+            createPhoto(url, boxPosition, index, photoCount, photoPrefix, photoCenter);
         }, index * 100);
     });
 }
@@ -291,7 +381,7 @@ window.getB2_2BoxPosition = function() {
 };
 
 // 创建彩色粒子（金色球体、红色钻石、绿色石块、黄色宝石）
-function createParticles(startPosition, count) {
+function createParticles(startPosition, count, boxPrefix) {
     for (let i = 0; i < count; i++) {
         let geometry;
         let color;
@@ -400,6 +490,7 @@ function createParticles(startPosition, count) {
         particle.userData.blinkPhase = Math.random() * Math.PI * 2; // 随机闪烁相位，让每个粒子闪烁节奏不同
         particle.userData.blinkSpeed = 0.02 + Math.random() * 0.03; // 闪烁速度（0.02-0.05）
         particle.userData.baseEmissiveIntensity = isMetallic ? 0.3 : 0.4; // 存储基础发光强度
+        particle.userData.boxPrefix = boxPrefix || 'B2-2'; // 存储粒子所属的盒子前缀
         
         particleGroup.add(particle);
         particles.push(particle);
@@ -481,12 +572,21 @@ function updateParticles() {
 }
 
 // 创建照片（围成一圈）
-function createPhoto(url, startPosition, index, total) {
+function createPhoto(url, startPosition, index, total, photoPrefix = 'B2-2', photoCenter = new THREE.Vector3(0, 0, 0)) {
     const loader = new THREE.TextureLoader();
     
     // 照片大小不同（随机变化）
-    const baseSize = 2;
-    const sizeVariation = 0.5;
+    let baseSize, sizeVariation;
+    if (photoPrefix === 'B2-2') {
+        baseSize = 6; // B2-2的照片放大到两倍
+        sizeVariation = 1.0;
+    } else if (photoPrefix === 'B1-2' || photoPrefix === 'C2-2') {
+        baseSize = 4; // B1-2和C2-2的照片放大一倍（2 * 2 = 4）
+        sizeVariation = 1.0;
+    } else {
+        baseSize = 2;
+        sizeVariation = 0.5;
+    }
     const photoSize = baseSize + (Math.random() - 0.5) * sizeVariation;
     const photoGeometry = new THREE.PlaneGeometry(photoSize, photoSize);
     
@@ -503,19 +603,33 @@ function createPhoto(url, startPosition, index, total) {
     photoMesh.position.copy(startPosition);
     
     // 目标位置（围成一圈，在场景中心区域，远离底部的盒子，上下错落摆放）
-    const radius = 8; // 圆圈半径
+    // C2-2的照片使用更小的半径，并且高于盒子
+    let radius, heightVariation, baseHeightOffset;
+    if (photoPrefix === 'C2-2') {
+        radius = 10; // C2-2的照片半径放大一圈（从5增加到10）
+        heightVariation = 1.5; // C2-2的高度变化范围更小
+        baseHeightOffset = 6; // C2-2的照片高于盒子6个单位（从4增加到6）
+    } else if (photoPrefix === 'B1-2') {
+        radius = 10; // B1-2的照片保持半径10
+        heightVariation = 3; // B1-2的高度变化范围
+        baseHeightOffset = 2; // B1-2的照片高于盒子2个单位（降低高度，避免离页面上边太近）
+    } else {
+        radius = 10; // 其他盒子保持10
+        heightVariation = 3;
+        baseHeightOffset = 0;
+    }
+    
     const angle = (index / total) * Math.PI * 2;
-    const centerY = 0; // 场景中心高度
-    const heightVariation = 3; // 高度变化范围（减半，最高和最低图片距离更近）
     
     // 使用正弦波分布，让照片在垂直方向上更均匀地错落分布
     // 使用index而不是random，确保每次打开盒子时照片位置一致
     const heightOffset = Math.sin(index * 1.5) * heightVariation * 0.8 + 
                         Math.cos(index * 2.3) * heightVariation * 0.5;
     
-    const targetX = Math.cos(angle) * radius;
-    const targetZ = Math.sin(angle) * radius;
-    const targetY = centerY + heightOffset;
+    // photoCenter参数：C2-2和B1-2的照片围绕各自盒子位置，其他盒子保持场景中心(0,0,0)
+    const targetX = photoCenter.x + Math.cos(angle) * radius;
+    const targetZ = photoCenter.z + Math.sin(angle) * radius;
+    const targetY = photoCenter.y + baseHeightOffset + heightOffset;
     
     photoMesh.userData.targetPosition = new THREE.Vector3(targetX, targetY, targetZ);
     photoMesh.userData.baseSize = photoSize; // 存储基础大小，用于距离缩放
@@ -523,7 +637,13 @@ function createPhoto(url, startPosition, index, total) {
     photoMesh.userData.isAnimating = true;
     photoMesh.userData.isSelected = false;
     photoMesh.userData.photoUrl = url;
-    photoMesh.userData.photoName = `B2-2-${index + 1}`;
+    photoMesh.userData.photoName = `${photoPrefix}-${index + 1}`;
+    photoMesh.userData.photoPrefix = photoPrefix; // 保存照片来源（B2-2或C2-2）
+    
+    // 为B2-2的照片添加序号标签
+    if (photoPrefix === 'B2-2') {
+        createPhotoNumberLabel(photoMesh, index + 1);
+    }
     
     // 加载纹理
     loader.load(url, (texture) => {
@@ -586,8 +706,11 @@ function onMouseClick(event) {
     raycaster.setFromCamera(mouse, camera);
     
     if (!isBoxOpened) {
-        // 检测是否点击了B2-2盒子
+        // 检测是否点击了B2-2、C2-2或B1-2盒子
         const b2_2Cube = cubeMap['B2-2'];
+        const c2_2Cube = cubeMap['C2-2'];
+        const b1_2Cube = cubeMap['B1-2'];
+        
         if (b2_2Cube && b2_2Cube.visible) {
             const intersects = raycaster.intersectObject(b2_2Cube);
             if (intersects.length > 0) {
@@ -595,7 +718,45 @@ function onMouseClick(event) {
                 return;
             }
         }
+        
+        if (c2_2Cube && c2_2Cube.visible) {
+            const intersects = raycaster.intersectObject(c2_2Cube);
+            if (intersects.length > 0) {
+                openBox(c2_2Cube);
+                return;
+            }
+        }
+        
+        if (b1_2Cube && b1_2Cube.visible) {
+            const intersects = raycaster.intersectObject(b1_2Cube);
+            if (intersects.length > 0) {
+                openBox(b1_2Cube);
+                return;
+            }
+        }
     } else {
+        // 盒子已打开时，检测是否点击了C2-2或B1-2盒子（收回所有照片）
+        const c2_2Cube = cubeMap['C2-2'];
+        const b1_2Cube = cubeMap['B1-2'];
+        
+        if (c2_2Cube && c2_2Cube.visible) {
+            const intersects = raycaster.intersectObject(c2_2Cube);
+            if (intersects.length > 0) {
+                // 点击C2-2盒子，收回所有照片到各自对应的盒子位置
+                window.collectAllPhotosAndParticles(null); // 传入null，让函数根据photoPrefix自动判断
+                return;
+            }
+        }
+        
+        if (b1_2Cube && b1_2Cube.visible) {
+            const intersects = raycaster.intersectObject(b1_2Cube);
+            if (intersects.length > 0) {
+                // 点击B1-2盒子，收回所有照片到各自对应的盒子位置
+                window.collectAllPhotosAndParticles(null); // 传入null，让函数根据photoPrefix自动判断
+                return;
+            }
+        }
+        
         // 检测是否点击了照片
         const intersects = raycaster.intersectObjects(photos);
         if (intersects.length > 0) {
@@ -623,6 +784,11 @@ function selectPhoto(photo) {
     photo.userData.isSelected = true;
     photo.userData.originalPosition = photo.position.clone();
     
+    // 获取照片来源
+    const photoPrefix = photo.userData.photoPrefix || 'B2-2';
+    const isC2_2 = photoPrefix === 'C2-2';
+    const isB1_2 = photoPrefix === 'B1-2';
+    
     // 放大动画（放大4倍，移动到屏幕正中心，保持面向摄像机）
     const targetScale = 4;
     
@@ -634,27 +800,59 @@ function selectPhoto(photo) {
     targetPosition.copy(camera.position);
     targetPosition.add(direction.multiplyScalar(distance)); // 相机位置 + 方向 * 距离 = 屏幕正中心
     
-    const duration = 500;
+    const duration = 800; // 增加动画时长，使过渡更自然
     const startTime = Date.now();
     const startScale = photo.scale.clone();
     const startPos = photo.position.clone();
+    const startOpacity = photo.material.opacity;
     
     photo.userData.selectingAnimation = true; // 标记正在选择动画中
     
     const animate = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
+        // 使用ease-in-out缓动函数，让开始和结束都更平滑自然
+        const easeInOut = progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
         
-        photo.scale.lerpVectors(startScale, new THREE.Vector3(targetScale, targetScale, 1), easeOut);
-        photo.position.lerpVectors(startPos, targetPosition, easeOut);
-        // 不需要设置旋转，因为Billboard效果会自动让照片面向摄像机
+        // 位置和缩放动画
+        photo.scale.lerpVectors(startScale, new THREE.Vector3(targetScale, targetScale, 1), easeInOut);
+        photo.position.lerpVectors(startPos, targetPosition, easeInOut);
         
-        if (progress < 1) {
-            requestAnimationFrame(animate);
+        if (isC2_2 || isB1_2) {
+            // C2-2和B1-2的照片：只放大，不淡出，不显示对话框
+            // 保持完全不透明
+            photo.material.opacity = 1;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                photo.userData.selectingAnimation = false;
+                // C2-2和B1-2照片保持可见，不显示对话框
+            }
         } else {
+            // B2-2的照片：淡出并显示对话框
+            // 在动画的后半段逐渐淡出（从0.6开始淡出）
+            if (progress > 0.6) {
+                const fadeProgress = (progress - 0.6) / 0.4; // 0到1之间
+                photo.material.opacity = startOpacity * (1 - fadeProgress);
+            }
+            
+            // 不需要设置旋转，因为Billboard效果会自动让照片面向摄像机
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
             photo.userData.selectingAnimation = false;
+            photo.material.opacity = 0; // 完全透明
+            photo.visible = false; // 隐藏照片
+            // 隐藏序号标签（如果存在）
+            if (photo.userData.numberLabelSprite) {
+                photo.userData.numberLabelSprite.visible = false;
+            }
             showPhotoDialog(photo);
+            }
         }
     };
     animate();
@@ -664,6 +862,7 @@ function selectPhoto(photo) {
 function deselectPhoto() {
     if (!selectedPhoto) return;
     
+    selectedPhotoNumber = null; // 清除照片序号
     const photo = selectedPhoto;
     const duration = 800; // 增加动画时长，使动画更丝滑
     const startTime = Date.now();
@@ -677,6 +876,10 @@ function deselectPhoto() {
     const distanceScale = baseDistance / originalDistance;
     const targetScaleValue = Math.max(0.5, Math.min(2.0, distanceScale));
     const targetScale = new THREE.Vector3(targetScaleValue, targetScaleValue, 1);
+    
+    // 恢复照片可见性和透明度
+    photo.visible = true;
+    photo.material.opacity = 1; // 立即恢复不透明
     
     photo.userData.deselectingAnimation = true; // 标记正在取消选择动画中
     
@@ -711,16 +914,82 @@ function deselectPhoto() {
 
 // 鼠标移动事件
 function onMouseMove(event) {
-    if (!isBoxOpened || photosAnimating) return;
-    
+    // 更新鼠标坐标
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
-    raycaster.setFromCamera(mouse, camera);
-    
-    // 更新鼠标样式
-    const intersects = raycaster.intersectObjects(photos);
-    renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+    // 如果盒子已打开且有照片，检测鼠标是否经过照片
+    if (isBoxOpened && photos.length > 0) {
+        raycaster.setFromCamera(mouse, camera);
+        
+        // 检测鼠标是否与照片相交（排除正在选择动画中的照片）
+        const visiblePhotos = photos.filter(photo => 
+            photo.visible && 
+            !photo.userData.selectingAnimation && 
+            !photo.userData.isSelected
+        );
+        
+        const intersects = raycaster.intersectObjects(visiblePhotos);
+        
+        // 更新鼠标样式（Windows 98风格的小手图标）
+        renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+    } else if (!isBoxOpened) {
+        // 盒子未打开时，检测是否悬停在B2-2或C2-2盒子上
+        raycaster.setFromCamera(mouse, camera);
+        const b2_2Cube = cubeMap['B2-2'];
+        const c2_2Cube = cubeMap['C2-2'];
+        
+        let isHovering = false;
+        if (b2_2Cube && b2_2Cube.visible) {
+            const intersects = raycaster.intersectObject(b2_2Cube);
+            if (intersects.length > 0) {
+                isHovering = true;
+            }
+        }
+        if (c2_2Cube && c2_2Cube.visible) {
+            const intersects = raycaster.intersectObject(c2_2Cube);
+            if (intersects.length > 0) {
+                isHovering = true;
+            }
+        }
+        
+        renderer.domElement.style.cursor = isHovering ? 'pointer' : 'default';
+    } else {
+        // 盒子已打开时，检测是否悬停在照片、C2-2盒子或B1-2盒子上
+        raycaster.setFromCamera(mouse, camera);
+        const c2_2Cube = cubeMap['C2-2'];
+        const b1_2Cube = cubeMap['B1-2'];
+        let isHovering = false;
+        
+        // 先检查照片
+        const visiblePhotos = photos.filter(photo => 
+            photo.visible && 
+            !photo.userData.selectingAnimation && 
+            !photo.userData.isSelected
+        );
+        const photoIntersects = raycaster.intersectObjects(visiblePhotos);
+        if (photoIntersects.length > 0) {
+            isHovering = true;
+        }
+        
+        // 再检查C2-2盒子
+        if (c2_2Cube && c2_2Cube.visible) {
+            const cubeIntersects = raycaster.intersectObject(c2_2Cube);
+            if (cubeIntersects.length > 0) {
+                isHovering = true;
+            }
+        }
+        
+        // 再检查B1-2盒子
+        if (b1_2Cube && b1_2Cube.visible) {
+            const cubeIntersects = raycaster.intersectObject(b1_2Cube);
+            if (cubeIntersects.length > 0) {
+                isHovering = true;
+            }
+        }
+        
+        renderer.domElement.style.cursor = isHovering ? 'pointer' : 'default';
+    }
 }
 
 // 更新照片的Billboard效果（始终面向摄像机，但保持平整稳定）
@@ -756,6 +1025,24 @@ function updatePhotosBillboard() {
             const clampedScale = Math.max(0.5, Math.min(2.0, distanceScale));
             photo.scale.set(clampedScale, clampedScale, 1);
         }
+        
+        // 更新序号标签位置（如果存在）
+        if (photo.userData.numberLabelSprite) {
+            const labelSprite = photo.userData.numberLabelSprite;
+            const photoSize = photo.userData.baseSize || 2;
+            const currentScale = photo.scale.x; // 获取当前缩放值
+            
+            // 标签位置跟随照片，放在右上角
+            labelSprite.position.copy(photo.position);
+            labelSprite.position.y += photoSize * currentScale * 0.4;
+            labelSprite.position.x += photoSize * currentScale * 0.4;
+            
+            // 标签始终面向摄像机
+            labelSprite.lookAt(camera.position);
+            
+            // 标签与照片同步显示/隐藏
+            labelSprite.visible = photo.visible;
+        }
     });
 }
 
@@ -764,13 +1051,40 @@ function showPhotoDialog(photo) {
     const dialog = document.getElementById('photo-dialog');
     const dialogTitle = document.getElementById('dialog-title');
     const chatName = document.getElementById('dialog-chat-name');
+    const dialogImage = document.getElementById('dialog-image');
+    const dialogImagePlaceholder = document.getElementById('dialog-image-placeholder');
+    
+    // 提取照片序号（从photoName中，格式如 "B2-2-4"）
+    const photoName = photo.userData.photoName || '';
+    const parts = photoName.split('-');
+    if (parts.length >= 3) {
+        selectedPhotoNumber = parseInt(parts[2], 10);
+    } else {
+        selectedPhotoNumber = null;
+    }
     
     if (dialog && dialogTitle) {
-        const photoName = photo.userData.photoName || '照片';
-        dialogTitle.textContent = photoName;
+        // 设置标题为 @box
+        dialogTitle.textContent = '@box';
+        
+        // 设置聊天名称
         if (chatName) {
-            chatName.textContent = photoName;
+            chatName.textContent = '@box';
         }
+        
+        // 在左侧面板显示图片
+        if (dialogImage && dialogImagePlaceholder) {
+            const photoUrl = photo.userData.photoUrl;
+            if (photoUrl) {
+                dialogImage.src = photoUrl;
+                dialogImage.style.display = 'block';
+                dialogImagePlaceholder.style.display = 'none';
+            } else {
+                dialogImage.style.display = 'none';
+                dialogImagePlaceholder.style.display = 'block';
+            }
+        }
+        
         dialog.style.display = 'block';
         
         // 聚焦输入框
@@ -837,14 +1151,29 @@ window.collectAllPhotosAndParticles = function(boxPosition) {
         selectedPhoto = null;
     }
     
-    // 收回所有照片到盒子位置
+    // 收回所有照片到各自对应的盒子位置
     const photosToRemove = [...photos]; // 复制数组，避免在遍历时修改
     photosToRemove.forEach((photo, index) => {
         if (photo && photo.parent) {
+            // 根据照片的来源（photoPrefix）决定收集到哪个盒子位置
+            const photoPrefix = photo.userData.photoPrefix || 'B2-2';
+            let targetBoxPosition;
+            
+            if (photoPrefix === 'B1-2' && b1_2BoxPosition) {
+                // B1-2的照片收集到B1-2盒子位置
+                targetBoxPosition = b1_2BoxPosition.clone();
+            } else if (photoPrefix === 'C2-2' && c2_2BoxPosition) {
+                // C2-2的照片收集到C2-2盒子位置
+                targetBoxPosition = c2_2BoxPosition.clone();
+            } else {
+                // 其他照片（B2-2等）收集到传入的位置或B2-2盒子位置
+                targetBoxPosition = boxPosition ? boxPosition.clone() : b2_2BoxPosition.clone();
+            }
+            
             const duration = 1500;
             const startTime = Date.now();
             const startPos = photo.position.clone();
-            const targetPos = boxPosition.clone();
+            const targetPos = targetBoxPosition;
             
             // 保存原始缩放，用于恢复
             const startScale = photo.scale.clone();
@@ -865,6 +1194,17 @@ window.collectAllPhotosAndParticles = function(boxPosition) {
                     requestAnimationFrame(animate);
                 } else {
                     photo.userData.isAnimating = false;
+                    // 移除序号标签（如果存在）
+                    if (photo.userData.numberLabelSprite) {
+                        scene.remove(photo.userData.numberLabelSprite);
+                        if (photo.userData.numberLabelSprite.material.map) {
+                            photo.userData.numberLabelSprite.material.map.dispose();
+                        }
+                        if (photo.userData.numberLabelSprite.material) {
+                            photo.userData.numberLabelSprite.material.dispose();
+                        }
+                        photo.userData.numberLabelSprite = null;
+                    }
                     // 移除照片
                     photoGroup.remove(photo);
                     if (photo.geometry) photo.geometry.dispose();
@@ -880,14 +1220,29 @@ window.collectAllPhotosAndParticles = function(boxPosition) {
         }
     });
     
-    // 收回所有粒子到盒子位置
+    // 收回所有粒子到各自对应的盒子位置
     const particlesToRemove = [...particles]; // 复制数组，避免在遍历时修改
     particlesToRemove.forEach((particle, index) => {
         if (particle && particle.parent) {
+            // 根据粒子的来源（boxPrefix）决定收集到哪个盒子位置
+            const boxPrefix = particle.userData.boxPrefix || 'B2-2';
+            let targetBoxPosition;
+            
+            if (boxPrefix === 'B1-2' && b1_2BoxPosition) {
+                // B1-2的粒子收集到B1-2盒子位置
+                targetBoxPosition = b1_2BoxPosition.clone();
+            } else if (boxPrefix === 'C2-2' && c2_2BoxPosition) {
+                // C2-2的粒子收集到C2-2盒子位置
+                targetBoxPosition = c2_2BoxPosition.clone();
+            } else {
+                // 其他粒子（B2-2等）收集到传入的位置或B2-2盒子位置
+                targetBoxPosition = boxPosition ? boxPosition.clone() : b2_2BoxPosition.clone();
+            }
+            
             const duration = 1500;
             const startTime = Date.now();
             const startPos = particle.position.clone();
-            const targetPos = boxPosition.clone();
+            const targetPos = targetBoxPosition;
             
             const animate = () => {
                 const elapsed = Date.now() - startTime;
@@ -939,6 +1294,24 @@ window.showC2_2Cube = function() {
     }
     
     // B2-2盒子保留在原地，不隐藏
+};
+
+// 显示B1-2盒子（B2-2盒子保留在原地）
+window.showB1_2Cube = function() {
+    const b1_2Cube = cubeMap['B1-2'];
+    if (b1_2Cube) {
+        b1_2Cube.visible = true;
+        if (b1_2Cube.userData.labelSprite) {
+            b1_2Cube.userData.labelSprite.visible = true;
+        }
+    }
+    
+    // B2-2盒子保留在原地，不隐藏
+};
+
+// 获取当前选中照片的序号
+window.getSelectedPhotoNumber = function() {
+    return selectedPhotoNumber;
 };
 
 // 初始化应用
