@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D立方体空间可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+            cursor: pointer;
+        }
+        
+        #photo-dialog {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+            width: 400px;
+            height: 500px;
+        }
+        
+        #photo-dialog .dialog-content {
+            background: #c0c0c0;
+            border: 1px solid #000000;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            font-family: 'MS Sans Serif', 'Microsoft Sans Serif', sans-serif;
+        }
+        
+        #photo-dialog .dialog-title-bar {
+            background: linear-gradient(to right, #000080 0%, #1084d0 100%);
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        
+        #photo-dialog .dialog-title-text {
+            flex: 1;
+        }
+        
+        #photo-dialog .dialog-menu-bar {
+            background: #c0c0c0;
+            border-top: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            padding: 2px 4px;
+            font-size: 11px;
+            color: #000;
+            flex-shrink: 0;
+        }
+        
+        #photo-dialog .dialog-menu-bar span {
+            margin-right: 15px;
+            cursor: default;
+            color: #000;
+        }
+        
+        #photo-dialog .dialog-chat-header {
+            background: #ffffff;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #000;
+            border-bottom: 1px solid #000000;
+            flex-shrink: 0;
+        }
+        
+        #photo-dialog .dialog-chat-header span {
+            color: #000;
+        }
+        
+        #photo-dialog .dialog-chat-area {
+            background: #ffffff;
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 11px;
+            color: #000;
+        }
+        
+        #photo-dialog .chat-message {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #e8f4f8;
+            border: 1px solid #000000;
+        }
+        
+        #photo-dialog .chat-date {
+            color: #000;
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+        
+        #photo-dialog .chat-message {
+            color: #000;
+        }
+        
+        #photo-dialog .chat-input-area {
+            background: #ffffff;
+            padding: 8px;
+            border-top: 1px solid #000000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .dialog-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-start;
+        }
+        
+        #photo-dialog .chat-input {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #000000;
+            background: #ffffff;
+            font-family: 'MS Sans Serif', 'Microsoft Sans Serif', sans-serif;
+            font-size: 11px;
+            color: #000;
+            outline: none;
+        }
+        
+        .dialog-btn {
+            padding: 2px 12px;
+            border: 1px solid #000000;
+            background: #c0c0c0;
+            color: #000;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: normal;
+            font-family: 'MS Sans Serif', 'Microsoft Sans Serif', sans-serif;
+            min-width: 60px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dialog-btn:active {
+            background: #808080;
+        }
+        
+        .dialog-btn:hover {
+            background: #d4d0c8;
+        }
+        
+        .dialog-btn:focus {
+            outline: 1px dotted #000;
+            outline-offset: -2px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    
+    <!-- 照片对话框 -->
+    <div id="photo-dialog" style="display: none;">
+        <div class="dialog-content">
+            <div class="dialog-title-bar">
+                <span class="dialog-title-text" id="dialog-title">照片</span>
+            </div>
+            <div class="dialog-menu-bar">
+                <span>文件</span>
+                <span>聊天</span>
+                <span>声音</span>
+                <span>查看</span>
+                <span>帮助</span>
+            </div>
+            <div class="dialog-chat-header">
+                <span id="dialog-chat-name">box</span> <span>▼</span>
+            </div>
+            <div class="dialog-chat-area" id="chat-messages">
+                <div class="chat-date" id="chat-date"></div>
+                <div class="chat-message" id="welcome-message">
+                    <span>👋</span> 我是box,什么都可以问我!
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="dialog-buttons">
+                    <button class="dialog-btn dialog-btn-yes" onclick="handleDialogYes()">是</button>
+                    <button class="dialog-btn dialog-btn-no" onclick="handleDialogNo()">否</button>
+                </div>
+                <input type="text" class="chat-input" id="chat-input" placeholder="输入或按空白键说话..." />
+            </div>
+        </div>
+    </div>
+    
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // 初始化聊天对话框
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chat-input');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatDate = document.getElementById('chat-date');
+            
+            // 设置当前日期
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            if (chatDate) {
+                chatDate.textContent = `box ${month}月${day}日`;
+            }
+            
+            // 输入框回车发送
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const message = chatInput.value.trim();
+                        if (message) {
+                            addChatMessage(message, 'user');
+                            chatInput.value = '';
+                            // 可以在这里添加自动回复逻辑
+                        }
+                    }
+                });
+            }
+        });
+        
+        // 添加聊天消息
+        function addChatMessage(text, sender) {
+            const chatMessages = document.getElementById('chat-messages');
+            if (!chatMessages) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+            messageDiv.textContent = text;
+            
+            if (sender === 'user') {
+                messageDiv.style.background = '#fffacd';
+                messageDiv.style.textAlign = 'right';
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 对话框处理函数
+        window.handleDialogYes = function() {
+            console.log('用户选择了"是"');
+            const dialog = document.getElementById('photo-dialog');
+            if (dialog) {
+                dialog.style.display = 'none';
+            }
+            // 收回所有照片和粒子到盒子，然后显示C2-2盒子
+            if (window.getB2_2BoxPosition && window.collectAllPhotosAndParticles && window.showC2_2Cube) {
+                const boxPosition = window.getB2_2BoxPosition();
+                window.collectAllPhotosAndParticles(boxPosition);
+                // 延迟显示C2-2盒子，等待收回动画完成
+                setTimeout(() => {
+                    window.showC2_2Cube();
+                }, 2000);
+            }
+        }
+        
+        window.handleDialogNo = function() {
+            console.log('用户选择了"否"');
+            const dialog = document.getElementById('photo-dialog');
+            if (dialog) {
+                dialog.style.display = 'none';
+            }
+            // 图片回到原位
+            if (window.deselectPhoto) {
+                window.deselectPhoto();
+            }
+        }
+    </script>
+</body>
+</html>
