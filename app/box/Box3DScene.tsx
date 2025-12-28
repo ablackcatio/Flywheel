@@ -47,11 +47,10 @@ export default function Box3DScene() {
       scriptLoadedRef.current = true;
     };
 
-    // 稍微延迟加载，确保importmap已处理
-    const timer = setTimeout(loadAppJs, 100);
+    // 立即加载，减少延迟
+    loadAppJs();
 
     return () => {
-      clearTimeout(timer);
       scriptLoadedRef.current = false;
     };
   }, []);

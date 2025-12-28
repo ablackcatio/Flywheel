@@ -24,19 +24,61 @@ let particleGroup = new THREE.Group();
 const b2_2PhotoCount = 6;
 const b2_2PhotoUrls = [];
 for (let i = 1; i <= b2_2PhotoCount; i++) {
-    b2_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/FF6B6B/FFFFFF?text=B2-2-${i}`);
+    if (i === 1) {
+        // 序号1使用本地图片，等比例显示
+        b2_2PhotoUrls.push('/photos/B2-2-1.JPG');
+    } else if (i === 2) {
+        // 序号2使用本地图片，等比例显示
+        b2_2PhotoUrls.push('/photos/B2-2-2.JPG');
+    } else if (i === 3) {
+        // 序号3使用本地图片，等比例显示
+        b2_2PhotoUrls.push('/photos/B2-2-3.JPG');
+    } else if (i === 4) {
+        // 序号4使用本地图片，等比例显示
+        b2_2PhotoUrls.push('/photos/B2-2-4.jpg');
+    } else if (i === 5) {
+        // 序号5使用本地图片，等比例显示
+        b2_2PhotoUrls.push('/photos/B2-2-5.JPG');
+    } else if (i === 6) {
+        // 序号6使用本地图片，等比例显示
+        b2_2PhotoUrls.push('/photos/B2-2-6.jpg');
+    } else {
+        b2_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/FF6B6B/FFFFFF?text=B2-2-${i}`);
+    }
 }
 
 const c2_2PhotoCount = 4;
 const c2_2PhotoUrls = [];
 for (let i = 1; i <= c2_2PhotoCount; i++) {
-    c2_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/4CAF50/FFFFFF?text=C2-2-${i}`);
+    // 使用本地图片文件（等比例显示，不压缩）
+    if (i === 1) {
+        c2_2PhotoUrls.push('/photos/C2-2-1.JPG');
+    } else if (i === 2) {
+        c2_2PhotoUrls.push('/photos/C2-2-2.JPG');
+    } else if (i === 3) {
+        c2_2PhotoUrls.push('/photos/C2-2-3.JPG');
+    } else if (i === 4) {
+        c2_2PhotoUrls.push('/photos/C2-2-4.JPG');
+    } else {
+        c2_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/4CAF50/FFFFFF?text=C2-2-${i}`);
+    }
 }
 
 const b1_2PhotoCount = 4;
 const b1_2PhotoUrls = [];
 for (let i = 1; i <= b1_2PhotoCount; i++) {
-    b1_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/4169E1/FFFFFF?text=B1-2-${i}`);
+    // 使用本地图片文件（等比例显示，不压缩）
+    if (i === 1) {
+        b1_2PhotoUrls.push('/photos/B1-2-1.JPG');
+    } else if (i === 2) {
+        b1_2PhotoUrls.push('/photos/B1-2-2.JPG');
+    } else if (i === 3) {
+        b1_2PhotoUrls.push('/photos/B1-2-3.JPG');
+    } else if (i === 4) {
+        b1_2PhotoUrls.push('/photos/B1-2-4.JPG');
+    } else {
+        b1_2PhotoUrls.push(`https://via.placeholder.com/${400 + Math.random() * 200}x${400 + Math.random() * 200}/4169E1/FFFFFF?text=B1-2-${i}`);
+    }
 }
 
 // 初始化
@@ -58,6 +100,7 @@ function init() {
     
     // 创建渲染器
     renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio); // 使用设备像素比，提高清晰度
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     const container = document.getElementById('container');
@@ -75,29 +118,29 @@ function init() {
     controls.minDistance = 3;
     controls.maxDistance = 30;
     
-    // 添加光源（圣诞氛围，温暖的家庭氛围灯光）
-    // 温暖的暖白色环境光（模拟室内灯光）
-    const ambientLight = new THREE.AmbientLight(0xfff4e6, 0.6); // 暖白色
+    // 添加光源（中性白色光源）
+    // 白色环境光
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // 白色
     scene.add(ambientLight);
     
-    // 主光源在左半侧（温暖的烛光色）
-    const directionalLight1 = new THREE.DirectionalLight(0xfff0d0, 1.3); // 温暖的暖黄色
+    // 主光源在左半侧（白色）
+    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 1.3); // 白色
     directionalLight1.position.set(-15, 10, 5); // 左侧光源
     directionalLight1.castShadow = true;
     scene.add(directionalLight1);
     
-    // 辅助光源（温暖的暖白色）
-    const directionalLight2 = new THREE.DirectionalLight(0xfff8e1, 0.5); // 温暖的暖白色
+    // 辅助光源（白色）
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5); // 白色
     directionalLight2.position.set(5, 5, -5);
     scene.add(directionalLight2);
     
-    // 添加点光源（增强反光效果，圣诞氛围，温暖的家庭氛围灯光）
+    // 添加点光源（增强反光效果）
     // 增大光源距离以产生更大的高光区域
-    const pointLight1 = new THREE.PointLight(0xfff0d0, 4.5, 100); // 温暖的暖黄色点光源（模拟烛光）
+    const pointLight1 = new THREE.PointLight(0xffffff, 4.5, 100); // 白色点光源
     pointLight1.position.set(-10, 8, 8);
     scene.add(pointLight1);
     
-    const pointLight2 = new THREE.PointLight(0xffd700, 4.0, 100); // 金色点光源（圣诞装饰灯）
+    const pointLight2 = new THREE.PointLight(0xffffff, 4.0, 100); // 白色点光源
     pointLight2.position.set(10, 5, -8);
     scene.add(pointLight2);
     
@@ -109,12 +152,12 @@ function init() {
     pointLight4.position.set(-8, -5, 8);
     scene.add(pointLight4);
     
-    // 额外的温暖光源（增加圣诞氛围）
-    const pointLight5 = new THREE.PointLight(0xffa500, 3.0, 100); // 温暖的橙色点光源
+    // 额外的光源
+    const pointLight5 = new THREE.PointLight(0xffffff, 3.0, 100); // 白色点光源
     pointLight5.position.set(8, -3, -10);
     scene.add(pointLight5);
     
-    const pointLight6 = new THREE.PointLight(0xfff4e6, 2.5, 100); // 柔和的暖白色点光源
+    const pointLight6 = new THREE.PointLight(0xffffff, 2.5, 100); // 白色点光源
     pointLight6.position.set(-5, -8, 5);
     scene.add(pointLight6);
     
@@ -151,11 +194,534 @@ function createCubes() {
     const rows = ['1', '2', '3'];
     const cols = ['1', '2', '3'];
     
-    const material = new THREE.MeshStandardMaterial({
+    // 默认材质（灰色，60%透明）
+    const defaultMaterial = new THREE.MeshStandardMaterial({
         color: 0xe0e0e0,
         metalness: 0.1,
         roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    // 纹理加载器
+    const textureLoader = new THREE.TextureLoader();
+    
+    // 为B2-2、C2-2和B1-2盒子创建带纹理的材质（加载时显示黑色）
+    const b2_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000, // 加载时显示黑色
+        metalness: 0.1,
+        roughness: 0.7,
         side: THREE.DoubleSide
+    });
+    
+    const c2_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000, // 加载时显示黑色
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b1_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000, // 加载时显示黑色
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    // 为其他需要纹理的盒子创建材质（60%透明）
+    const a1_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const a2_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const a3_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b1_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b2_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b3_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b3_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c1_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c2_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c3_3Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    // 为更多需要纹理的盒子创建材质（60%透明）
+    const a1_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const a1_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const a2_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const a3_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b1_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b2_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const b3_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c1_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c1_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c2_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c3_1Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const c3_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const a2_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const a3_2Material = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.1,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    // 加载纹理（图片加载完成后替换黑色）
+    const b2_2Texture = textureLoader.load('/photos/B2-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b2_2Material.map = texture;
+        b2_2Material.color.setHex(0xffffff); // 图片加载后恢复白色，让纹理正常显示
+        b2_2Material.needsUpdate = true;
+    });
+    
+    const c2_2Texture = textureLoader.load('/photos/C2-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c2_2Material.map = texture;
+        c2_2Material.color.setHex(0xffffff); // 图片加载后恢复白色，让纹理正常显示
+        c2_2Material.needsUpdate = true;
+    });
+    
+    const b1_2Texture = textureLoader.load('/photos/B1-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b1_2Material.map = texture;
+        b1_2Material.color.setHex(0xffffff); // 图片加载后恢复白色，让纹理正常显示
+        b1_2Material.needsUpdate = true;
+    });
+    
+    // 加载其他盒子的纹理
+    textureLoader.load('/photos/A1-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a1_3Material.map = texture;
+        a1_3Material.color.setHex(0xffffff);
+        a1_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/A2-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a2_3Material.map = texture;
+        a2_3Material.color.setHex(0xffffff);
+        a2_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/A3-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a3_3Material.map = texture;
+        a3_3Material.color.setHex(0xffffff);
+        a3_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/B1-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b1_3Material.map = texture;
+        b1_3Material.color.setHex(0xffffff);
+        b1_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/B2-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b2_3Material.map = texture;
+        b2_3Material.color.setHex(0xffffff);
+        b2_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/B3-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b3_2Material.map = texture;
+        b3_2Material.color.setHex(0xffffff);
+        b3_2Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/B3-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b3_3Material.map = texture;
+        b3_3Material.color.setHex(0xffffff);
+        b3_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C1-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c1_3Material.map = texture;
+        c1_3Material.color.setHex(0xffffff);
+        c1_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C2-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c2_3Material.map = texture;
+        c2_3Material.color.setHex(0xffffff);
+        c2_3Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C3-3-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c3_3Material.map = texture;
+        c3_3Material.color.setHex(0xffffff);
+        c3_3Material.needsUpdate = true;
+    });
+    
+    // 加载更多盒子的纹理
+    textureLoader.load('/photos/A1-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a1_1Material.map = texture;
+        a1_1Material.color.setHex(0xffffff);
+        a1_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/A1-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a1_2Material.map = texture;
+        a1_2Material.color.setHex(0xffffff);
+        a1_2Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/A2-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a2_1Material.map = texture;
+        a2_1Material.color.setHex(0xffffff);
+        a2_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/A3-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a3_1Material.map = texture;
+        a3_1Material.color.setHex(0xffffff);
+        a3_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/B1-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b1_1Material.map = texture;
+        b1_1Material.color.setHex(0xffffff);
+        b1_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/B2-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b2_1Material.map = texture;
+        b2_1Material.color.setHex(0xffffff);
+        b2_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/B3-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        b3_1Material.map = texture;
+        b3_1Material.color.setHex(0xffffff);
+        b3_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C1-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c1_1Material.map = texture;
+        c1_1Material.color.setHex(0xffffff);
+        c1_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C1-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c1_2Material.map = texture;
+        c1_2Material.color.setHex(0xffffff);
+        c1_2Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C2-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c2_1Material.map = texture;
+        c2_1Material.color.setHex(0xffffff);
+        c2_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C3-1-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c3_1Material.map = texture;
+        c3_1Material.color.setHex(0xffffff);
+        c3_1Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/C3-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        c3_2Material.map = texture;
+        c3_2Material.color.setHex(0xffffff);
+        c3_2Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/A2-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a2_2Material.map = texture;
+        a2_2Material.color.setHex(0xffffff);
+        a2_2Material.needsUpdate = true;
+    });
+    
+    textureLoader.load('/photos/A3-2-box.png', (texture) => {
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        a3_2Material.map = texture;
+        a3_2Material.color.setHex(0xffffff);
+        a3_2Material.needsUpdate = true;
     });
     
     for (let layerIndex = 0; layerIndex < 3; layerIndex++) {
@@ -172,6 +738,65 @@ function createCubes() {
                 
                 const label = `${layer}${row}-${col}`;
                 const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+                
+                // 根据标签选择合适的材质
+                let material = defaultMaterial;
+                if (label === 'B2-2') {
+                    material = b2_2Material;
+                } else if (label === 'C2-2') {
+                    material = c2_2Material;
+                } else if (label === 'B1-2') {
+                    material = b1_2Material;
+                } else if (label === 'A1-3') {
+                    material = a1_3Material;
+                } else if (label === 'A2-3') {
+                    material = a2_3Material;
+                } else if (label === 'A3-3') {
+                    material = a3_3Material;
+                } else if (label === 'B1-3') {
+                    material = b1_3Material;
+                } else if (label === 'B2-3') {
+                    material = b2_3Material;
+                } else if (label === 'B3-2') {
+                    material = b3_2Material;
+                } else if (label === 'B3-3') {
+                    material = b3_3Material;
+                } else if (label === 'C1-3') {
+                    material = c1_3Material;
+                } else if (label === 'C2-3') {
+                    material = c2_3Material;
+                } else if (label === 'C3-3') {
+                    material = c3_3Material;
+                } else if (label === 'A1-1') {
+                    material = a1_1Material;
+                } else if (label === 'A1-2') {
+                    material = a1_2Material;
+                } else if (label === 'A2-1') {
+                    material = a2_1Material;
+                } else if (label === 'A3-1') {
+                    material = a3_1Material;
+                } else if (label === 'B1-1') {
+                    material = b1_1Material;
+                } else if (label === 'B2-1') {
+                    material = b2_1Material;
+                } else if (label === 'B3-1') {
+                    material = b3_1Material;
+                } else if (label === 'C1-1') {
+                    material = c1_1Material;
+                } else if (label === 'C1-2') {
+                    material = c1_2Material;
+                } else if (label === 'C2-1') {
+                    material = c2_1Material;
+                } else if (label === 'C3-1') {
+                    material = c3_1Material;
+                } else if (label === 'C3-2') {
+                    material = c3_2Material;
+                } else if (label === 'A2-2') {
+                    material = a2_2Material;
+                } else if (label === 'A3-2') {
+                    material = a3_2Material;
+                }
+                
                 const cube = new THREE.Mesh(geometry, material);
                 
                 const posX = x * spacing + baseOffset;
@@ -179,8 +804,15 @@ function createCubes() {
                 const posZ = z * spacing + baseOffset;
                 
                 cube.position.set(posX, posY, posZ);
-                cube.castShadow = true;
-                cube.receiveShadow = true;
+                
+                // B1-2盒子不投射和接收阴影
+                if (label === 'B1-2') {
+                    cube.castShadow = false;
+                    cube.receiveShadow = false;
+                } else {
+                    cube.castShadow = true;
+                    cube.receiveShadow = true;
+                }
                 
                 cube.userData.label = label;
                 cube.userData.size = 'large';
@@ -192,15 +824,8 @@ function createCubes() {
                 cubes.push(cube);
                 cubeMap[label] = cube;
                 
-                createLabel(cube, label);
-                
-                // 隐藏所有盒子，除了B2-2
-                if (label !== 'B2-2') {
-                    cube.visible = false;
-                    if (cube.userData.labelSprite) {
-                        cube.userData.labelSprite.visible = false;
-                    }
-                }
+                // 隐藏盒子编号标签
+                // createLabel(cube, label);
             }
         }
     }
@@ -335,6 +960,19 @@ function openBox(cube) {
     
     const boxPosition = cube.position.clone();
     const boxLabel = cube.userData.label;
+    
+    // 如果是B2-2，隐藏所有其他立方体
+    if (boxLabel === 'B2-2') {
+        cubes.forEach(cubeItem => {
+            if (cubeItem.userData.label !== 'B2-2') {
+                cubeItem.visible = false;
+                // 同时隐藏标签
+                if (cubeItem.userData.labelSprite) {
+                    cubeItem.userData.labelSprite.visible = false;
+                }
+            }
+        });
+    }
     
     // 根据盒子类型选择照片数据
     let photoUrls, photoCount, photoPrefix;
@@ -593,7 +1231,8 @@ function createPhoto(url, startPosition, index, total, photoPrefix = 'B2-2', pho
     const photoSize = baseSize + (Math.random() - 0.5) * sizeVariation;
     const photoGeometry = new THREE.PlaneGeometry(photoSize, photoSize);
     
-    const photoMaterial = new THREE.MeshStandardMaterial({
+    // 使用 MeshBasicMaterial 确保图片清晰显示，不受光照影响
+    const photoMaterial = new THREE.MeshBasicMaterial({
         map: null,
         side: THREE.DoubleSide,
         transparent: true,
@@ -643,13 +1282,44 @@ function createPhoto(url, startPosition, index, total, photoPrefix = 'B2-2', pho
     photoMesh.userData.photoName = `${photoPrefix}-${index + 1}`;
     photoMesh.userData.photoPrefix = photoPrefix; // 保存照片来源（B2-2或C2-2）
     
-    // 为B2-2的照片添加序号标签
-    if (photoPrefix === 'B2-2') {
-        createPhotoNumberLabel(photoMesh, index + 1);
-    }
+    // 隐藏序号标签（已注释）
+    // if (photoPrefix === 'B2-2') {
+    //     createPhotoNumberLabel(photoMesh, index + 1);
+    // }
     
     // 加载纹理
     loader.load(url, (texture) => {
+        // 优化纹理设置，确保图片清晰（去掉模糊效果）
+        texture.generateMipmaps = false; // 禁用 mipmap 生成，避免模糊
+        texture.minFilter = THREE.LinearFilter; // 使用线性过滤，不使用 mipmap
+        texture.magFilter = THREE.LinearFilter; // 放大时使用线性过滤
+        texture.anisotropy = 16; // 设置各向异性过滤为最大值，提高清晰度
+        
+        // 根据图片原始宽高比调整几何体尺寸，实现等比例显示，确保图片完整显示
+        const image = texture.image;
+        if (image && image.width && image.height) {
+            const aspectRatio = image.width / image.height;
+            const currentSize = photoSize;
+            let width, height;
+            
+            if (aspectRatio > 1) {
+                // 图片是横向的（宽>高），以宽度为准，高度按比例缩小
+                width = currentSize;
+                height = currentSize / aspectRatio;
+            } else {
+                // 图片是纵向的（高>宽），以高度为准，宽度按比例缩小，确保完整显示包括上部
+                width = currentSize * aspectRatio;
+                height = currentSize;
+            }
+            
+            // 更新几何体尺寸，使用计算出的宽高，确保整个图片（包括上部）都能完整显示
+            photoMesh.geometry.dispose();
+            photoMesh.geometry = new THREE.PlaneGeometry(width, height);
+            
+            // 更新 baseSize 为平均尺寸（用于距离缩放）
+            photoMesh.userData.baseSize = (width + height) / 2;
+        }
+        
         photoMaterial.map = texture;
         photoMaterial.needsUpdate = true;
     }, undefined, (error) => {
@@ -1315,6 +1985,14 @@ window.showB1_2Cube = function() {
 // 获取当前选中照片的序号
 window.getSelectedPhotoNumber = function() {
     return selectedPhotoNumber;
+};
+
+// 自动打开B2-2盒子（供外部调用）
+window.autoOpenB2_2 = function() {
+    const b2_2Cube = cubeMap['B2-2'];
+    if (b2_2Cube && b2_2Cube.visible && !isBoxOpened) {
+        openBox(b2_2Cube);
+    }
 };
 
 // 初始化应用

@@ -16,7 +16,7 @@ export default function LandingPage() {
     mbti: ''
   });
 
-  // Three.js scene setup
+  // Three.js scene setup (粒子效果 - 可选，如果与Box3DScene冲突可以注释掉)
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -151,6 +151,11 @@ export default function LandingPage() {
     setProgress(percentage);
   }, [formData]);
 
+  // 预加载box页面以加快跳转速度
+  useEffect(() => {
+    router.prefetch('/box');
+  }, [router]);
+
   const handleStart = () => {
     setShowForm(true);
   };
@@ -176,8 +181,8 @@ export default function LandingPage() {
       console.log('✅ 用户信息已保存到localStorage:', userInfo);
     }
 
-    // Redirect to home page
-    router.push('/home');
+    // Redirect to box page - 使用replace避免返回，使用prefetch优化加载
+    router.replace('/box');
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -189,8 +194,8 @@ export default function LandingPage() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#0d0d1a' }}>
-      {/* Canvas container */}
-      <div ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }} />
+      {/* Canvas container - 粒子效果背景 */}
+      <div ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }} />
 
       {/* UI container */}
       <div style={{
